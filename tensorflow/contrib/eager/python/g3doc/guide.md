@@ -19,28 +19,32 @@ to models defined without using eager execution.
 
 ## Installation
 
-Eager execution is **not** included in the latest release (version 1.4) of
-TensorFlow. To use it, you will need to [build TensorFlow from
-source](https://www.tensorflow.org/install/install_sources) or install the
-nightly builds.
+Eager execution is included in TensorFlow versions 1.5 and above.
+Installation instructions at https://www.tensorflow.org/install/
 
-For example, the nightly builds can be installed using `pip`:
+The contents of this guide are compatible with TensorFlow 1.5. However, if you
+run into bugs that are fixed in source but not the release, you may want to
+either [build from source](https://www.tensorflow.org/install/install_sources)
+or try a nightly build. The nightly builds are available as:
 
--   `pip install tf-nightly` (for CPU-only TensorFlow)
--   `pip install tf-nightly-gpu` (for GPU-enabled TensorFlow)
+- [`pip` packages](https://github.com/tensorflow/tensorflow/blob/master/README.md#installation) and
 
-Or using `docker`, with [Jupyter Notebook](http://jupyter.org/) support:
+- [docker](https://hub.docker.com/r/tensorflow/tensorflow/) images.
+
+For example, to run the latest nightly docker image:
 
 ```sh
-# For CPU-only TensorFlow
+# If you have a GPU, use https://github.com/NVIDIA/nvidia-docker
+docker pull tensorflow/tensorflow:nightly-gpu
+docker run --runtime=nvidia -it -p 8888:8888 tensorflow/tensorflow:nightly-gpu
+
+# If you do not have a GPU, use the CPU-only image
 docker pull tensorflow/tensorflow:nightly
 docker run -it -p 8888:8888 tensorflow/tensorflow:nightly
-
-# For GPU-enabled TensorFlow:
-# (Requires https://github.com/NVIDIA/nvidia-docker)
-nvidia-docker pull tensorflow/tensorflow:nightly-gpu
-nvidia-docker run -it -p 8888:8888 tensorflow/tensorflow:nightly-gpu
 ```
+
+And then visit http://localhost:8888 in your browser for a Jupyter notebook
+environment.
 
 ## Getting Started
 
@@ -292,7 +296,7 @@ def loss(weight, bias):
   error = prediction(training_inputs, weight, bias) - training_outputs
   return tf.reduce_mean(tf.square(error))
 
-# Function that returns the the derivative of loss with respect to
+# Function that returns the derivative of loss with respect to
 # weight and bias
 grad = tfe.gradients_function(loss)
 
@@ -388,7 +392,7 @@ many arguments.
 
 In fact, eager execution encourages use of the [Keras](https://keras.io)-style
 "Layer" classes in the
-[`tf.layers`](https://www.tensorflow.org/versions/master/api_docs/python/tf/layers)
+[`tf.layers`](https://www.tensorflow.org/api_docs/python/tf/layers)
 module.
 
 Furthermore, you may want to apply more sophisticated techniques to compute
@@ -488,10 +492,10 @@ parameters of the model as arguments to the `loss` function.
 ### Using Keras and the Layers API
 
 [Keras](https://keras.io) is a popular API for defining model structures. The
-[`tf.keras.layers`](https://www.tensorflow.org/versions/master/api_docs/python/tf/keras/layers)
+[`tf.keras.layers`](https://www.tensorflow.org/api_docs/python/tf/keras/layers)
 module provides a set of building blocks for models and is implemented using the
 `tf.layers.Layer` subclasses in the
-[`tf.layers`](https://www.tensorflow.org/versions/master/api_docs/python/tf/layers)
+[`tf.layers`](https://www.tensorflow.org/api_docs/python/tf/layers)
 module. We encourage the use of these same building blocks when using
 TensorFlow's eager execution feature. For example, the very same linear
 regression model can be built using `tf.layers.Dense`:
@@ -565,8 +569,8 @@ for i in range(20001):
 print("Loss on test set: %f" % loss(model, data.test.images, data.test.labels).numpy())
 ```
 
-For a more complete example, see
-[`tensorflow/contrib/eager/python/examples/mnist.py`](https://www.tensorflow.org/code/tensorflow/contrib/eager/python/examples/mnist/mnist.py)
+For a more complete example, see [the example in the tensorflow/models
+repository](https://github.com/tensorflow/models/tree/master/official/mnist/mnist_eager.py).
 
 ### Checkpointing trained variables
 
@@ -608,9 +612,9 @@ it provides conveniences like keeping track of all model variables and methods
 to save and restore from checkpoints.
 
 Sub-classes of `tfe.Network` may register `Layer`s (like classes in
-[`tf.layers`](https://www.tensorflow.org/versions/master/api_docs/python/tf/layers),
+[`tf.layers`](https://www.tensorflow.org/api_docs/python/tf/layers),
 or [Keras
-layers](https://www.tensorflow.org/versions/master/api_docs/python/tf/keras/layers))
+layers](https://www.tensorflow.org/api_docs/python/tf/keras/layers))
 using a call to `self.track_layer()` and define the computation in an
 implementation of `call()`.
 
@@ -704,7 +708,7 @@ with tfe.restore_variables_on_create(
                                     net(inp).numpy()))
       all_variables = (
           net.variables
-          + tfe.get_optimizer_variables(optimizer)
+          + optimizer.variables()
           + [global_step])
       # Save the checkpoint.
       tfe.Saver(all_variables).save(checkpoint_prefix, global_step=global_step)
@@ -757,7 +761,7 @@ For example, to record summaries once every 100 global steps, use:
 
 ```python
 tf.train.get_or_create_global_step()  # Ensuring the global step variable exists
-writer = tf.contrib.summary.create_summary_file_writer(logdir)
+writer = tf.contrib.summary.create_file_writer(logdir)
 
 for _ in range(iterations):
   with writer.as_default():
@@ -800,7 +804,7 @@ example in
 
 The discussion above has been centered around the computation executed by your
 model. The
-[`tf.data`](https://www.tensorflow.org/versions/master/api_docs/python/tf/data)
+[`tf.data`](https://www.tensorflow.org/api_docs/python/tf/data)
 module provides APIs to build complex input pipelines from simple, reusable
 pieces.
 
@@ -810,8 +814,7 @@ However, the process of iterating over elements of the dataset differs between
 eager execution and graph construction. When eager execution is enabled, the
 discussion on iterator creation using `make_one_shot_iterator()` and
 `get_next()` in the
-[Programmer's
-Guide](https://www.tensorflow.org/versions/master/programmers_guide/datasets) is
+[Programmer's Guide](https://www.tensorflow.org/programmers_guide/datasets) is
 *not* applicable. Instead, a more Pythonic `Iterator` class is available.
 
 For example:
@@ -856,11 +859,9 @@ eagerly or constructing graphs. This means that you can iteratively develop your
 model with eager execution enabled and later, if needed, use the same code to
 reap the benefits of representing models as computational graphs.
 
-For example,
-[`mnist.py`](https://www.tensorflow.org/code/tensorflow/contrib/eager/python/examples/mnist/mnist.py)
-defines a model that is eagerly executed. That same code is used to construct
-and execute a graph in
-[`mnist_graph_test.py`](https://www.tensorflow.org/code/tensorflow/contrib/eager/python/examples/mnist/mnist_graph_test.py).
+For example, the same model definition used to construct a graph in
+[mnist.py`](https://github.com/tensorflow/models/tree/master/official/mnist/mnist.py)
+can be trained with eager execution enabled as in [`mnist_eager.py`](https://github.com/tensorflow/models/tree/master/official/mnist/mnist_eager.py).
 
 Other models in the [examples
 directory](https://www.tensorflow.org/code/tensorflow/contrib/eager/python/examples/)

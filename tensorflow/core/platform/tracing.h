@@ -103,7 +103,7 @@ class Tracing {
   friend class ScopedAnnotation;
   friend class TraceMe;
 
-  static std::atomic<Tracing::Engine*> tracing_engine_;
+  TF_EXPORT static std::atomic<Tracing::Engine*> tracing_engine_;
   static Tracing::Engine* engine() {
     return tracing_engine_.load(std::memory_order_acquire);
   }
@@ -173,6 +173,14 @@ class Tracing::Engine {
   // Same as above, but implementations can avoid copying the string.
   virtual Tracer* StartTracing(string&& label, bool is_expensive) {
     return StartTracing(StringPiece(label), is_expensive);
+  }
+
+  // Backwards compatibility one arg variants (assume is_expensive=true).
+  Tracer* StartTracing(StringPiece label) {
+    return StartTracing(label, /*is_expensive=*/true);
+  }
+  Tracer* StartTracing(string&& label) {
+    return StartTracing(StringPiece(label), /*is_expensive=*/true);
   }
 };
 

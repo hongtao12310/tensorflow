@@ -2,11 +2,14 @@
 #   Contains ops for statistical distributions (with pdf, cdf, sample, etc...).
 #   APIs here are meant to evolve over time.
 
+package(default_visibility = [
+    "//learning/brain/contrib/bayesflow:__subpackages__",
+    "//tensorflow:__subpackages__",
+])
+
 licenses(["notice"])  # Apache 2.0
 
 exports_files(["LICENSE"])
-
-package(default_visibility = ["//tensorflow:__subpackages__"])
 
 load("//tensorflow:tensorflow.bzl", "cuda_py_test")
 
@@ -57,6 +60,7 @@ py_library(
         "//tensorflow/python:nn",
         "//tensorflow/python:nn_ops",
         "//tensorflow/python:random_ops",
+        "//tensorflow/python:spectral_ops",
         "//tensorflow/python:state_ops",
         "//tensorflow/python:tensor_util",
         "//tensorflow/python:util",
@@ -122,6 +126,19 @@ cuda_py_test(
         "//tensorflow/python:random_ops",
     ],
     tags = ["no_pip"],
+)
+
+cuda_py_test(
+    name = "autoregressive_test",
+    size = "small",
+    srcs = ["python/kernel_tests/autoregressive_test.py"],
+    additional_deps = [
+        ":distributions_py",
+        "//third_party/py/numpy",
+        "//tensorflow/python:client_testlib",
+        "//tensorflow/python:framework_for_generated_wrappers",
+        "//tensorflow/python:platform_test",
+    ],
 )
 
 cuda_py_test(
@@ -202,8 +219,41 @@ cuda_py_test(
 )
 
 cuda_py_test(
+    name = "half_normal_test",
+    size = "medium",
+    srcs = ["python/kernel_tests/half_normal_test.py"],
+    additional_deps = [
+        ":distributions_py",
+        "//third_party/py/numpy",
+        "//tensorflow/python:client",
+        "//tensorflow/python:client_testlib",
+        "//tensorflow/python:framework_for_generated_wrappers",
+        "//tensorflow/python:framework_test_lib",
+        "//tensorflow/python:gradients",
+        "//tensorflow/python:nn_ops",
+        "//tensorflow/python:platform_test",
+        "//tensorflow/python:variables",
+    ],
+)
+
+cuda_py_test(
     name = "inverse_gamma_test",
     srcs = ["python/kernel_tests/inverse_gamma_test.py"],
+    additional_deps = [
+        ":distributions_py",
+        "//third_party/py/numpy",
+        "//tensorflow/python:client",
+        "//tensorflow/python:client_testlib",
+        "//tensorflow/python:framework_for_generated_wrappers",
+        "//tensorflow/python:framework_test_lib",
+        "//tensorflow/python:nn_ops",
+        "//tensorflow/python:platform_test",
+    ],
+)
+
+cuda_py_test(
+    name = "kumaraswamy_test",
+    srcs = ["python/kernel_tests/kumaraswamy_test.py"],
     additional_deps = [
         ":distributions_py",
         "//third_party/py/numpy",
@@ -300,6 +350,7 @@ cuda_py_test(
         "//tensorflow/python:nn_ops",
         "//tensorflow/python:platform_test",
     ],
+    tags = ["nomsan"],
 )
 
 cuda_py_test(
@@ -368,7 +419,7 @@ cuda_py_test(
 
 cuda_py_test(
     name = "poisson_lognormal_test",
-    size = "small",
+    size = "medium",
     srcs = ["python/kernel_tests/poisson_lognormal_test.py"],
     additional_deps = [
         ":distributions_py",
@@ -403,6 +454,7 @@ cuda_py_test(
         "//tensorflow/python:framework_test_lib",
         "//tensorflow/python:platform_test",
     ],
+    tags = ["no_windows"],  # TODO: needs investigation on Windows
 )
 
 cuda_py_test(
@@ -416,11 +468,26 @@ cuda_py_test(
         "//tensorflow/python:framework",
         "//tensorflow/python:framework_for_generated_wrappers",
         "//tensorflow/python:framework_test_lib",
+        "//tensorflow/python:spectral_ops_test_util",
         "//tensorflow/python:math_ops",
         "//tensorflow/python:nn_ops",
         "//tensorflow/python:platform_test",
     ],
     tags = ["nomsan"],  # disable to avoid false positives from scipy.
+)
+
+cuda_py_test(
+    name = "statistical_testing_test",
+    size = "medium",
+    srcs = [
+        "python/kernel_tests/statistical_testing_test.py",
+    ],
+    additional_deps = [
+        ":distributions_py",
+        "//third_party/py/numpy",
+        "//tensorflow/python:client_testlib",
+    ],
+    tags = ["noasan"],
 )
 
 cuda_py_test(
@@ -766,6 +833,22 @@ cuda_py_test(
 )
 
 cuda_py_test(
+    name = "batch_normalization_test",
+    size = "small",
+    srcs = ["python/kernel_tests/bijectors/batch_normalization_test.py"],
+    additional_deps = [
+        ":bijectors_py",
+        ":distributions_py",
+        "//third_party/py/numpy",
+        "//tensorflow/python:array_ops",
+        "//tensorflow/python:client_testlib",
+        "//tensorflow/python:framework_for_generated_wrappers",
+        "//tensorflow/python:framework_test_lib",
+        "//tensorflow/python:platform_test",
+    ],
+)
+
+cuda_py_test(
     name = "chain_test",
     size = "small",
     srcs = ["python/kernel_tests/bijectors/chain_test.py"],
@@ -880,9 +963,44 @@ cuda_py_test(
 )
 
 cuda_py_test(
+    name = "kumaraswamy_bijector_test",
+    size = "small",
+    srcs = ["python/kernel_tests/bijectors/kumaraswamy_bijector_test.py"],
+    additional_deps = [
+        ":bijectors_py",
+        ":distributions_py",
+        "//third_party/py/numpy",
+        "@six_archive//:six",
+        "//tensorflow/contrib/linalg:linalg_py",
+        "//tensorflow/python:array_ops",
+        "//tensorflow/python:client_testlib",
+        "//tensorflow/python:framework_for_generated_wrappers",
+        "//tensorflow/python:framework_test_lib",
+        "//tensorflow/python:math_ops",
+        "//tensorflow/python:platform_test",
+    ],
+)
+
+cuda_py_test(
     name = "masked_autoregressive_test",
     size = "small",
     srcs = ["python/kernel_tests/bijectors/masked_autoregressive_test.py"],
+    additional_deps = [
+        ":bijectors_py",
+        ":distributions_py",
+        "//third_party/py/numpy",
+        "//tensorflow/python:array_ops",
+        "//tensorflow/python:client_testlib",
+        "//tensorflow/python:framework_for_generated_wrappers",
+        "//tensorflow/python:framework_test_lib",
+        "//tensorflow/python:platform_test",
+    ],
+)
+
+cuda_py_test(
+    name = "real_nvp_test",
+    size = "small",
+    srcs = ["python/kernel_tests/bijectors/real_nvp_test.py"],
     additional_deps = [
         ":bijectors_py",
         ":distributions_py",
@@ -932,7 +1050,7 @@ cuda_py_test(
 
 cuda_py_test(
     name = "reshape_test",
-    size = "small",
+    size = "medium",
     srcs = ["python/kernel_tests/bijectors/reshape_test.py"],
     additional_deps = [
         ":bijectors_py",
@@ -1003,6 +1121,7 @@ cuda_py_test(
         "//tensorflow/python:math_ops",
         "//tensorflow/python:platform_test",
     ],
+    tags = ["no_windows"],  # TODO: needs investigation on Windows
 )
 
 cuda_py_test(
